@@ -1051,30 +1051,24 @@ export function startTransition(fn: () => unknown): Promise<void> {
     fn();
     return Transition.done!;
   }
-  const l = Listener;
-  const o = Owner;
-  return Promise.resolve().then(() => {
-    Listener = l;
-    Owner = o;
-    let t: TransitionState | undefined;
-    if (Scheduler || SuspenseContext) {
-      t =
-        Transition ||
-        (Transition = {
-          sources: new Set(),
-          effects: [],
-          promises: new Set(),
-          disposed: new Set(),
-          queue: new Set(),
-          running: true
-        });
-      t.done || (t.done = new Promise(res => (t!.resolve = res)));
-      t.running = true;
-    }
-    runUpdates(fn, false);
-    Listener = Owner = null;
-    return t ? t.done : undefined;
-  });
+
+  let t: TransitionState | undefined;
+  if (Scheduler || SuspenseContext) {
+    t =
+      Transition ||
+      (Transition = {
+        sources: new Set(),
+        effects: [],
+        promises: new Set(),
+        disposed: new Set(),
+        queue: new Set(),
+        running: true
+      });
+    t.done || (t.done = new Promise(res => (t!.resolve = res)));
+    t.running = true;
+  }
+  runUpdates(fn, false);
+  return (t && t.done) || Promise.resolve();
 }
 
 // keep immediately evaluated module code, below its dependencies like Listener & createSignal
